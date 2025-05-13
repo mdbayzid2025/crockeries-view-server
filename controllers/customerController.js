@@ -23,6 +23,19 @@ exports.allCustomer = async (req, res)=>{
     }
 }
 
+
+exports.singleCustomer = async (req, res)=>{
+    try {
+        const {id} = req.params;
+        const customers = await Customer.findById(id);        
+
+        return res.status(200).json({success: true, data: customers})
+    } catch (error) {
+        return res.status(500).json({success:false, message: error?.message})
+    }
+}
+
+
 exports.updateCustomer = async (req, res)=>{
     try {
         const {id} = req.params;

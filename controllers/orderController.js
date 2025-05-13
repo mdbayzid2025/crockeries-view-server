@@ -63,8 +63,12 @@ exports.createOrder = async (req, res)=>{
         
         const { calculatedItems, totals } = calculateOrderTotals(items);
 
+         const order = await Order.find();     
+         const invoice_no = String(order?.length + 1).padStart(4, '0');
+
         const data = {
             ...rest,
+            invoice_no,
             order_items: calculatedItems,
             sub_total: totals.sub_total,
             discount: totals.total_discount,
@@ -94,13 +98,12 @@ exports.updateOrder = async (req, res)=>{
         const { calculatedItems, totals } = calculateOrderTotals(order_items);
 
         const updateData = {
-            ...rest,
+            ...rest,            
             order_items: calculatedItems,
             sub_total: totals.sub_total,
             discount: totals.total_discount,
             net_total: totals.net_total,
         }
-
 
         const updatedOrder = await Order.findByIdAndUpdate(id, updateData, {new: true})
         return res.status(200).json({success: true, data: updatedOrder})

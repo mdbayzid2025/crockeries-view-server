@@ -14,6 +14,7 @@ const categoryRouter = require("./Routes/categoryRouter")
 const productRouter = require("./Routes/productRouter")
 const customerRouter = require("./Routes/customerRouter")
 const orderRouters = require("./Routes/orderRouter")
+const { default: settingRouter } = require("./Routes/settingRouter")
 
 app.use(express.json())
 app.use(cors({
@@ -30,9 +31,7 @@ app.use(bodyParser.json())
 
 
 
-// Routes
-app.use("/api/v1/properties", propertyRouter)
-app.use("/api/v1/auth", authRouter)
+
 
 app.get("/", (req, res)=>{
     res.send("server running")
@@ -82,6 +81,7 @@ app.use("/api/v1/category", categoryRouter)
 app.use("/api/v1/products", productRouter)
 app.use("/api/v1/customers", customerRouter)
 app.use("/api/v1/orders", orderRouters)
+app.use("/api/v1/settings", settingRouter)
 
 app.listen(5000, ()=>{
     console.log("server running with 5000")
