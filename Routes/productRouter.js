@@ -1,8 +1,10 @@
 const { addProduct, allProducts, updateProduct, deleteProduct, getProductById } = require("../controllers/productController");
+const authMiddleware = require("../middleware/authMiddleware");
+const roleMiddleware = require("../middleware/roleMiddleware");
 
 const productRouter = require("express").Router();
 
-productRouter.get("/", allProducts);
+productRouter.get("/", authMiddleware, roleMiddleware('user'),  allProducts);
 productRouter.get("/:id", getProductById);
 productRouter.post("/create", addProduct);
 productRouter.put("/:id", updateProduct);

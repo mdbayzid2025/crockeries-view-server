@@ -1,20 +1,19 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const settingSchema = new mongoose.Schema({
-  siteName: { type: String, required: true },
-  vatNo: { type: String },  
+  site_name: { type: String, required: true },
+  vat_no: { type: String },  
   mobile: { type: String, required: true },
   address: { type: String },
   district: { type: String },
   email: { type: String },
-  ownerName: { type: String },
-  photo: { type: String }, // URL or path
-  logo: { type: String },  // URL or path
+  owner_name: { type: String },
+  photo: { type: String },
+  logo: { type: String },  
 }, {
   timestamps: true
 });
 
+const Setting = mongoose.model('Setting', settingSchema);
 
-export default mongoose.model('Setting', settingSchema); 
-
-
+module.exports = Setting;

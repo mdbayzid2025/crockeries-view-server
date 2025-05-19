@@ -1,10 +1,11 @@
 import express from 'express';
-import { getSetting, createSetting, updateSetting } from '../controllers/settingController.js';
+import { getSetting, createSetting, updateSetting, deleteSetting } from '../controllers/settingController.js';
 
 const settingRouter = express.Router();
 
-router.get('/', getSetting);
-router.post('/', createSetting);
-router.put('/', updateSetting);
+settingRouter.delete('/:id', deleteSetting);
+settingRouter.get('/', getSetting);
+settingRouter.post('/', createSetting);
+settingRouter.put('/:id', updateSetting);
 
 export default settingRouter;
