@@ -38,7 +38,7 @@ const calculateOrderTotals = (items) => {
     
     const result = updateItems.reduce(
       (acc, item) => {              
-        acc.sub_total += item?.total || 0;
+        acc.net_total += item?.total || 0;
         acc.total_discount += Number(item?.discount || 0);                        
         return acc;
       },
@@ -49,7 +49,7 @@ const calculateOrderTotals = (items) => {
       }
     );
   
-    result.net_total = result.sub_total - result.total_discount;
+    result.sub_total = result.net_total + result.total_discount;
     return { calculatedItems: updateItems, totals: result };
   };
   

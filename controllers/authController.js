@@ -25,59 +25,83 @@ exports.register = async(req, res) =>{
 
 exports.login = async (req, res) => {
   try {
-
-    console.log("llllog in", req.body)
     const { email, password } = req.body;
 
     const user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(403).json({
-        success: false,
-        message: "Don't have account, please join",
-      });
-    }
+    if (!user)
+      return res.status(403).json({ message: "Account does not exist" });
 
     const isPasswordMatched = await bcrypt.compare(password, user.password);
+    if (!isPasswordMatched)
+      return res.status(400).json({ message: "Invalid credentials" });
 
-    if (!isPasswordMatched) {
-      return res.status(400).json({
-        success: false,
-        message: "Email or password is invalid",
-      });
-    }
-
-    // JWT payload
     const payload = {
       id: user._id,
       email: user.email,
-      role: user.role, // Ensure your User model has a `role` field
+      role: user.role,
     };
 
-    // Sign the token
+    // Access token
     const accessToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
-      expiresIn: '1d', // adjust as needed
+      expiresIn: "15m",
     });
 
-    // Refresh  token
-     const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
+    res.cookie('accessToken', accessToken,{
+      maxAge: 15 * 60 * 1000,
+      httpOnly: true,  
+      secure: false, // for production true
+      sameSite: 'lax' // for production 'none'
+    })
+
+
+    const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
       expiresIn: "7d",
     });
+      res.cookie('refreshToken', refreshToken,{
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days      
+      httpOnly: true,  
+      secure: false, // for production true
+      sameSite: 'lax' // for production 'none'            
+    })
 
     return res.status(200).json({
       success: true,
       message: "Login successful",
-      user: {role: user.role, email: user.email},
-      accessToken,
-      refreshToken,
+      // token: accessToken, // accessToken only, refreshToken is in cookie
+      user,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    return res.status(500).json({ message: error.message });
   }
 };
+
+exports.refreshToken = async (req, res) => {
+  const token = req.cookies.refreshToken;
+
+  console.log("refresh token")
+  if (!token) {
+    return res.status(401).json({ message: "Refresh token not found" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+
+    const newAccessToken = jwt.sign(
+      {
+        id: decoded.id,
+        email: decoded.email,
+        role: decoded.role,
+      },
+      process.env.JWT_SECRET_KEY,
+      { expiresIn: "15m" }
+    );
+
+    return res.json({ accessToken: newAccessToken });
+  } catch (err) {
+    return res.status(403).json({ message: "Invalid or expired refresh token" });
+  }
+};
+
 
 exports.googleLogin = async (req, res) =>{
     try {      
@@ -140,6 +164,73 @@ exports.getAllUser = async(req, res)=>{
     }
 }
 
+
+
+
+
+
+
+
+/*
+
+------------- Login ---------------
+exports.login = async (req, res) => {
+  try {
+
+    console.log("llllog in", req.body)
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(403).json({
+        success: false,
+        message: "Don't have account, please join",
+      });
+    }
+
+    const isPasswordMatched = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordMatched) {
+      return res.status(400).json({
+        success: false,
+        message: "Email or password is invalid",
+      });
+    }
+
+    // JWT payload
+    const payload = {
+      id: user._id,
+      email: user.email,
+      role: user.role, // Ensure your User model has a `role` field
+    };
+
+    // Sign the token
+    const accessToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
+      expiresIn: '30s', // adjust as needed
+    });
+
+    // Refresh  token
+     const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
+      expiresIn: "5m",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Login successful",
+      user: {role: user.role, email: user.email},
+      accessToken,
+      refreshToken,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+---------------------- Refresh Token ---------------
 exports.refreshToken = async (req, res) => {
   const { token } = req.body;
   
@@ -164,3 +255,4 @@ exports.refreshToken = async (req, res) => {
     return res.status(403).json({ message: "Invalid or expired refresh token" });
   }
 };
+*/

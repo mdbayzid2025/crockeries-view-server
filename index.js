@@ -15,28 +15,23 @@ const productRouter = require("./Routes/productRouter")
 const customerRouter = require("./Routes/customerRouter")
 const orderRouters = require("./Routes/orderRouter")
 const { default: settingRouter } = require("./Routes/settingRouter")
+const cookieParser = require("cookie-parser");
 
 app.use(express.json())
-app.use(cors({
-    // origin: "http://localhost:5173", 
-    origin: "*", 
-    credentials: true
-}))
+app.use(cookieParser()); // <-- Required for reading cookies
 app.use(bodyParser.json())
 
-
-
-
-
-
-
-
-
+app.use(cors(
+    {
+    origin: "http://localhost:5173", 
+    // origin: "*", 
+    credentials: true
+}
+))
 
 app.get("/", (req, res)=>{
     res.send("server running")
 })
-
 
 
 app.get("/booking", async (req, res)=>{

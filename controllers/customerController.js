@@ -3,10 +3,12 @@ const Customer = require("../Schema/CustomerSchema");
 
 exports.addCustomer = async (req, res)=>{
     try {
-        const newCustomer = new Customer(req.body);
-        await newCustomer.save();
 
-        return res.status(200).json({success: true, data: newCustomer})
+        console.log("customer", req.body)
+        // const newCustomer = new Customer(req.body);
+        // await newCustomer.save();
+
+        return res.status(200).json({success: true, data: "newCustomer"})
     } catch (error) {
         return res.status(500).json({success:false, message: error?.message})
     }

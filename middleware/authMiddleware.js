@@ -3,12 +3,12 @@ const jwt = require('jsonwebtoken');
 const authMiddleware = (req, res, next) => {
 
   try {
-      const token = req.headers.authorization?.split(' ')[1];
+      const token = req.cookies.accessToken;
   
+      console.log("tttttoken", token);
   if (!token) {
     return res.status(401).json({ message: 'No token provided' });
-  }
- console.log("decoded", token)
+  } 
     const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
     console.log("decoded", decoded)
     req.user = decoded; // Contains user's role, id, etc.
