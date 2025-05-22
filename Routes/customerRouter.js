@@ -6,7 +6,7 @@ const customerRouter = require("express").Router();
 
 customerRouter.get("/", allCustomer);
 customerRouter.get("/:id", singleCustomer);
-customerRouter.post("/", upload.single("photo"), addCustomer);
+customerRouter.post("/", upload("users").single("photo"), addCustomer);
 customerRouter.put("/:id", updateCustomer);
 customerRouter.delete("/:id", deleteCustomer);
 

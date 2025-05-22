@@ -16,6 +16,8 @@ const customerRouter = require("./Routes/customerRouter")
 const orderRouters = require("./Routes/orderRouter")
 const { default: settingRouter } = require("./Routes/settingRouter")
 const cookieParser = require("cookie-parser");
+const path = require("path");
+
 
 app.use(express.json())
 app.use(cookieParser()); // <-- Required for reading cookies
@@ -77,6 +79,8 @@ app.use("/api/v1/products", productRouter)
 app.use("/api/v1/customers", customerRouter)
 app.use("/api/v1/orders", orderRouters)
 app.use("/api/v1/settings", settingRouter)
+// Make everything inside /public accessible via URL
+app.use(express.static(path.join(__dirname, "public")));
 
 app.listen(5000, ()=>{
     console.log("server running with 5000")
