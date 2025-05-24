@@ -1,5 +1,9 @@
 const Customer = require("../Schema/CustomerSchema");
 
+const path = require("path");
+const fs = require("fs");
+const BASE_URL = process.env.BASE_URL;
+
 // exports.addCustomer = async (req, res) => {
 //   try {
 //     const photo = req.file ? req.file.filename : null;
@@ -56,36 +60,45 @@ exports.singleCustomer = async (req, res)=>{
 }
 
 
-const deleteFile = (fileUrl) => {
-  const filePath = path.join(__dirname, "../public", fileUrl.replace(process.env.BASE_URL, ""));
+const deleteFile = (fileUrl, baseUrl) => {
+  const filePath = path.join(__dirname, "../public", fileUrl.replace(baseUrl, ""));
   if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
   }
 };
 
 exports.updateCustomer = async (req, res)=>{
-    try {
-        const {id} = req.params;
-        const customer = await Customer.findById(id);     
-        
-        if(!customer){
-            return res.status(401).json({success: true, message: "customer not exist"});
-        }
-
-         if (req.file) {
-    if (customer.photo) deleteFile(customer.photo);
-
-    const folder = req.file.destination.split("public")[1];
-    req.body.photo = `${process.env.BASE_URL}${folder}/${req.file.filename}`;
-  }
-
   
-        const updatedCustomer = await Customer.findByIdAndUpdate(id, req.body, {new: true})
+    try {
+    const existingCustomer = await Customer.findById(req.params.id);
+    if (!existingCustomer) return res.status(404).json({ message: "Customer not found" });
 
-        return res.status(200).json({success: true, data: updatedCustomer})
-    } catch (error) {
-        return res.status(500).json({success:false, message: error?.message})
+    // Handle new image upload
+    if (req.file) {
+      const folder = req.file.destination.split("public")[1];
+      const newPhotoUrl = `${BASE_URL}${folder}/${req.file.filename}`;
+
+      // ✅ Only delete old photo if it exists and not same as new photo
+      if (
+        existingCustomer.photo &&
+        existingCustomer.photo.startsWith(BASE_URL) &&
+        fs.existsSync(path.join(__dirname, "../public", existingCustomer.photo.replace(BASE_URL, "")))
+      ) {
+        deleteFile(existingCustomer.photo, BASE_URL);
+      }
+
+      req.body.photo = newPhotoUrl;
+    } else {
+      // ✅ If no new photo uploaded, keep the existing photo
+      req.body.photo = existingCustomer.photo;
     }
+
+    const updatedCustomer = await Customer.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    return res.status(200).json({ success: true, data: updatedCustomer });
+
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
 }
 
 

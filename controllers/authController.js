@@ -43,11 +43,11 @@ exports.login = async (req, res) => {
 
     // Access token
     const accessToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
-      expiresIn: "15m",
+      expiresIn: "1m",
     });
 
     res.cookie('accessToken', accessToken,{
-      maxAge: 15 * 60 * 1000,
+      maxAge: 1 * 60 * 1000,
       httpOnly: true,  
       secure: false, // for production true
       sameSite: 'lax' // for production 'none'
@@ -55,10 +55,12 @@ exports.login = async (req, res) => {
 
 
     const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
-      expiresIn: "7d",
+      expiresIn: "2m",
+      // expiresIn: "7d",
     });
       res.cookie('refreshToken', refreshToken,{
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days      
+      // maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days 
+      maxAge: 2 * 60 * 1000,     
       httpOnly: true,  
       secure: false, // for production true
       sameSite: 'lax' // for production 'none'            
@@ -75,10 +77,35 @@ exports.login = async (req, res) => {
   }
 };
 
+exports.logout = async (req, res) => {
+  try {
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: false, // set true in production
+      sameSite: 'lax', // use 'none' in production with https
+    });
+
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: false, // set true in production
+      sameSite: 'lax', // use 'none' in production with https
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Logout successful",
+    });
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+};
+
+
+
 exports.refreshToken = async (req, res) => {
   const token = req.cookies.refreshToken;
 
-  console.log("refresh token")
+  
   if (!token) {
     return res.status(401).json({ message: "Refresh token not found" });
   }
@@ -93,8 +120,15 @@ exports.refreshToken = async (req, res) => {
         role: decoded.role,
       },
       process.env.JWT_SECRET_KEY,
-      { expiresIn: "15m" }
+      { expiresIn: "1m" }
     );
+
+       res.cookie('accessToken', newAccessToken,{
+      maxAge: 1 * 60 * 1000,
+      httpOnly: true,  
+      secure: false, // for production true
+      sameSite: 'lax' // for production 'none'
+    })
 
     return res.json({ accessToken: newAccessToken });
   } catch (err) {

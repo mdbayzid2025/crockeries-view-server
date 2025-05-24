@@ -2,8 +2,13 @@ const Product = require("../Schema/ProductsSchema")
 
 exports.addProduct = async (req, res)=>{
     try {
-        
-        console.log("assadfsadf", req.body);
+         const productData = req.body;        
+
+            if (req.file) {
+  const folder = req.file.destination.split("public")[1]; // ex: /images/products
+  productData.image = `${process.env.BASE_URL}${folder}/${req.file.filename}`;
+}
+
 
         const newProduct = new Product(req.body);
         await newProduct.save();
