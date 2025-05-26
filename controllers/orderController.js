@@ -9,7 +9,7 @@ exports.allOrders = async (req, res) => {
           filter.status = status;
         }
     
-        const orders = await Order.find(filter);
+        const orders = await Order.find(filter).sort({ createdAt: -1 });;
         res.json(orders);
       } catch (error) {
         res.status(500).json({ error: 'Server error' });

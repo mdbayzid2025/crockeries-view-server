@@ -8,6 +8,6 @@ const settingRouter = express.Router();
 settingRouter.delete('/:id', authMiddleware, roleMiddleware(process.env.ACCESSABLE_ROLE),  deleteSetting);
 settingRouter.get('/', getSetting);
 settingRouter.post('/', authMiddleware, roleMiddleware(process.env.ACCESSABLE_ROLE), upload("siteinfo").single("photo"), createSetting);
-settingRouter.put('/:id', authMiddleware, roleMiddleware(process.env.ACCESSABLE_ROLE),  updateSetting);
+settingRouter.put('/:id', authMiddleware, roleMiddleware(process.env.ACCESSABLE_ROLE), upload("siteinfo").single("photo"),  updateSetting);
 
 export default settingRouter;

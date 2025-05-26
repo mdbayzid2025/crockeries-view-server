@@ -1,30 +1,22 @@
 const Customer = require("../Schema/CustomerSchema");
+const generateCustomerCode = require('../utility/generateCustomerCode,js');
 
 const path = require("path");
 const fs = require("fs");
 const BASE_URL = process.env.BASE_URL;
 
-// exports.addCustomer = async (req, res) => {
-//   try {
-//     const photo = req.file ? req.file.filename : null;
-//     const newCustomer = new Customer({ ...req.body, photo });
-//     await newCustomer.save();
-    
-//     console.log("nnnnew customer", newCustomer);
-//     return res.status(201).json({ success: true, data: newCustomer });
-//   } catch (error) {
-//     return res.status(500).json({ success: false, message: error.message });
-//   }
-// };
-
 exports.addCustomer = async (req, res) => {
   try {
     const customerData = req.body;
 
+    // Handle image path
     if (req.file) {
-  const folder = req.file.destination.split("public")[1]; // ex: /images/products
-  customerData.photo = `${process.env.BASE_URL}${folder}/${req.file.filename}`;
-}
+      const folder = req.file.destination.split("public")[1];
+      customerData.photo = `${process.env.BASE_URL}${folder}/${req.file.filename}`.replace(/\\/g, "/");
+    }
+
+    // Generate a unique code
+    customerData.code = await generateCustomerCode();
 
     const newCustomer = new Customer(customerData);
     await newCustomer.save();
@@ -35,12 +27,9 @@ exports.addCustomer = async (req, res) => {
   }
 };
 
-
-
-
 exports.allCustomer = async (req, res)=>{
     try {
-        const customers = await Customer.find();        
+        const customers = await Customer.find().sort({createdAt: -1});        
 
         return res.status(200).json({success: true, data: customers})
     } catch (error) {

@@ -43,11 +43,11 @@ exports.login = async (req, res) => {
 
     // Access token
     const accessToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
-      expiresIn: "1m",
+      expiresIn: "15m",
     });
 
     res.cookie('accessToken', accessToken,{
-      maxAge: 1 * 60 * 1000,
+      maxAge: 15 * 60 * 1000,
       httpOnly: true,  
       secure: false, // for production true
       sameSite: 'lax' // for production 'none'
@@ -55,12 +55,11 @@ exports.login = async (req, res) => {
 
 
     const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
-      expiresIn: "2m",
+      expiresIn: "7d",
       // expiresIn: "7d",
     });
       res.cookie('refreshToken', refreshToken,{
-      // maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days 
-      maxAge: 2 * 60 * 1000,     
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days       
       httpOnly: true,  
       secure: false, // for production true
       sameSite: 'lax' // for production 'none'            

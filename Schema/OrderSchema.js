@@ -112,7 +112,7 @@ const orderSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
-  });
+  }, {timestamps: true});
   
   // Create the model
   const Order = mongoose.model('Orders', orderSchema);
