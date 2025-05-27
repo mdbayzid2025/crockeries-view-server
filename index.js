@@ -17,7 +17,7 @@ const orderRouters = require("./Routes/orderRouter")
 const { default: settingRouter } = require("./Routes/settingRouter")
 const cookieParser = require("cookie-parser");
 const path = require("path");
-
+const port = process.env.port || 6000
 
 app.use(express.json())
 app.use(cookieParser()); // <-- Required for reading cookies
@@ -82,7 +82,7 @@ app.use("/api/v1/settings", settingRouter)
 // Make everything inside /public accessible via URL
 app.use(express.static(path.join(__dirname, "public")));
 
-app.listen(5000, ()=>{
-    console.log("server running with 5000")
-})
 
+app.listen(port, () => {
+  console.log(`✅ Server is running on port ${port}`);
+})
