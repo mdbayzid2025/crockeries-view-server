@@ -15,7 +15,7 @@ const orderRouters = require("./Routes/orderRouter")
 const { default: settingRouter } = require("./Routes/settingRouter")
 const cookieParser = require("cookie-parser");
 const path = require("path");
-const port = process.env.port || 6000
+const port = process.env.port
 
 app.use(express.json())
 app.use(cookieParser()); // <-- Required for reading cookies
