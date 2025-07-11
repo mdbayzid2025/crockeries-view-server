@@ -23,8 +23,7 @@ app.use(bodyParser.json())
 
 app.use(cors(
     {
-    origin: "http://localhost:5173", 
-    // origin: "*", 
+    origin: process.env.ORIGIN,     
     credentials: true
 }
 ))
@@ -45,8 +44,10 @@ app.use("/api/v1/products", productRouter)
 app.use("/api/v1/customers", customerRouter)
 app.use("/api/v1/orders", orderRouters)
 app.use("/api/v1/settings", settingRouter)
+
 // Make everything inside /public accessible via URL
-app.use(express.static(path.join(__dirname, "public")));
+// app.use(express.static(path.join(__dirname, "public")));
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
 
 // Routes
