@@ -12,6 +12,6 @@ authRouter.post("/login", login)
 authRouter.get("/users", authMiddleware, roleMiddleware(process.env.ACCESSABLE_ROLE),  getAllUser)
 
 authRouter.get("/refresh-token", refreshToken);
-authRouter.post("/logout", logout);
+authRouter.get("/logout", logout);
 
 module.exports = authRouter
