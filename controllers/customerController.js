@@ -3,7 +3,8 @@ const generateCustomerCode = require('../utility/generateCustomerCode,js');
 
 const path = require("path");
 const fs = require("fs");
-const BASE_URL = process.env.BASE_URL;
+const { log } = require("console");
+const {BASE_URL} = process.env;
 
 exports.addCustomer = async (req, res) => {
   try {
@@ -58,31 +59,30 @@ const deleteFile = (fileUrl, baseUrl) => {
 
 exports.updateCustomer = async (req, res)=>{
   
+  const id = req.body.id;
     try {
-    const existingCustomer = await Customer.findById(req.params.id);
+    const existingCustomer = await Customer.findById(id);
     if (!existingCustomer) return res.status(404).json({ message: "Customer not found" });
 
-    // Handle new image upload
-    if (req.file) {
-      const folder = req.file.destination.split("public")[1];
-      const newPhotoUrl = `${BASE_URL}${folder}/${req.file.filename}`;
-
-      // ✅ Only delete old photo if it exists and not same as new photo
-      if (
-        existingCustomer.photo &&
-        existingCustomer.photo.startsWith(BASE_URL) &&
-        fs.existsSync(path.join(__dirname, "../public", existingCustomer.photo.replace(BASE_URL, "")))
-      ) {
-        deleteFile(existingCustomer.photo, BASE_URL);
-      }
-
-      req.body.photo = newPhotoUrl;
-    } else {
-      // ✅ If no new photo uploaded, keep the existing photo
-      req.body.photo = existingCustomer.photo;
-    }
-
-    const updatedCustomer = await Customer.findByIdAndUpdate(req.params.id, req.body, { new: true });
+     // Handle image update
+      if (req.file) {
+     // ✅ Extract relative path after "public"
+     const relativePath = req.file.path.split("public")[1].replace(/\\/g, "/");
+     const newImageUrl = `${BASE_URL}${relativePath}`;
+   
+     // ✅ Delete old image if exists
+     if (
+       existingCustomer.photo &&
+       existingCustomer.photo.startsWith(BASE_URL) &&
+       fs.existsSync(path.join(__dirname, "../public", existingCustomer.photo.replace(BASE_URL, "")))
+     ) {
+       deleteFile(existingCustomer.photo, BASE_URL);
+     }
+   
+     req.body.photo = newImageUrl;
+   }
+   
+    const updatedCustomer = await Customer.findByIdAndUpdate(id, req.body, { new: true });
     return res.status(200).json({ success: true, data: updatedCustomer });
 
   } catch (error) {

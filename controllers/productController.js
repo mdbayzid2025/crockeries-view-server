@@ -1,28 +1,33 @@
 const Product = require("../Schema/ProductsSchema")
 
-exports.addProduct = async (req, res)=>{
-    try {
-         const productData = req.body;        
+const fs = require("fs");
+const path = require("path");
 
-            if (req.file) {
-  const folder = req.file.destination.split("public")[1]; // ex: /images/products
-  productData.image = `${process.env.BASE_URL}${folder}/${req.file.filename}`;
-}
+const { BASE_URL } = process.env; // make sure BASE_URL is set properly
+
+exports.addProduct = async (req, res) => {
+    try {
+        const productData = req.body;
+
+        if (req.file) {
+            const folder = req.file.destination.split("public")[1]; // ex: /images/products
+            productData.image = `${process.env.BASE_URL}${folder}/${req.file.filename}`;
+        }
 
 
         const newProduct = new Product(req.body);
         await newProduct.save();
 
-        return res.status(200).json({success: true, data: newProduct})
+        return res.status(200).json({ success: true, data: newProduct })
     } catch (error) {
-        return res.status(500).json({success:false, message: error?.message})
+        return res.status(500).json({ success: false, message: error?.message })
     }
 }
 
 exports.getProductById = async (req, res) => {
     try {
         const product = await Product.findById(req.params.id);
-        
+
         if (!product) {
             return res.status(404).json({
                 success: false,
@@ -49,39 +54,64 @@ exports.getProductById = async (req, res) => {
     }
 };
 
-exports.allProducts = async (req, res)=>{
+exports.allProducts = async (req, res) => {
     try {
-        const products = await Product.find();        
+        const products = await Product.find();
 
-        return res.status(200).json({success: true, data: products})
+        return res.status(200).json({ success: true, data: products })
     } catch (error) {
-        return res.status(500).json({success:false, message: error?.message})
+        return res.status(500).json({ success: false, message: error?.message })
     }
 }
 
-exports.updateProduct = async (req, res)=>{
-    try {
-        const {id} = req.params;
-        const product = await Product.findById(id);     
-        
-        if(!product){
-            return res.status(401).json({success: true, message: "product not exist"});
-        }
+const deleteFile = (fileUrl, baseUrl) => {
+  const filePath = path.join(__dirname, "../public", fileUrl.replace(baseUrl, ""));
+  if (fs.existsSync(filePath)) {
+    fs.unlinkSync(filePath);
+  }
+};
 
-        const updatedProduct = await Product.findByIdAndUpdate(id, req.body, {new: true})
+exports.updateProduct = async (req, res) => {
+  try {
+    const id = req.body.id;
+    const existingProduct = await Product.findById(id);
 
-        return res.status(200).json({success: true, data: updatedProduct})
-    } catch (error) {
-        return res.status(500).json({success:false, message: error?.message})
+    if (!existingProduct) {
+      return res.status(404).json({ success: false, message: "Product not found" });
     }
+
+    // Handle image update
+   if (req.file) {
+  // ✅ Extract relative path after "public"
+  const relativePath = req.file.path.split("public")[1].replace(/\\/g, "/");
+  const newImageUrl = `${BASE_URL}${relativePath}`;
+
+  // ✅ Delete old image if exists
+  if (
+    existingProduct.image &&
+    existingProduct.image.startsWith(BASE_URL) &&
+    fs.existsSync(path.join(__dirname, "../public", existingProduct.image.replace(BASE_URL, "")))
+  ) {
+    deleteFile(existingProduct.image, BASE_URL);
+  }
+
+  req.body.image = newImageUrl;
 }
 
-exports.deleteProduct  = async(req, res)=>{
+    const updatedProduct = await Product.findByIdAndUpdate(id, req.body, { new: true });
+
+    return res.status(200).json({ success: true, data: updatedProduct });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.deleteProduct = async (req, res) => {
     try {
-        const {id} = req.params;
+        const { id } = req.params;
         const deletedProduct = await Product.findByIdAndDelete(id);
-        return res.status(200).json({success: true, message: "deleted", data: deletedProduct})
+        return res.status(200).json({ success: true, message: "deleted", data: deletedProduct })
     } catch (error) {
-        return res.status(500).json({success:false, message: error?.message})
+        return res.status(500).json({ success: false, message: error?.message })
     }
 }
