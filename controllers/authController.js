@@ -1,93 +1,173 @@
-const  jwt = require("jsonwebtoken");
+const jwt = require("jsonwebtoken");
 const User = require("../Schema/UserSchema");
-const bcrypt = require('bcrypt'); 
+const bcrypt = require('bcrypt');
 
 
-exports.register = async(req, res) =>{
-    try {
+exports.register = async (req, res) => {
+  try {
 
-        const  user = await User.findOne({email: req.body.email})
-        if(user) return res.status(403).json({success: false, message: "Already have an account"})
-        
-        const saltRounds = 10; 
+    const user = await User.findOne({ email: req.body.email })
+    if (user) return res.status(403).json({ success: false, message: "Already have an account" })
 
-         // Hash the password before storing it
-         const hashedPassword = await bcrypt.hash(req.body.password, saltRounds);
-        const newUser = await User.create({...req.body, password: hashedPassword})
-      
-        return res
-        .status(200).json({success:true, message: "Join success", user:newUser})
-    } catch (error) {
-        return res        
-        .status(500).json({success:false, message: error?.message})
-    }
+    const saltRounds = 10;
+
+    // Hash the password before storing it
+    const hashedPassword = await bcrypt.hash(req.body.password, saltRounds);
+    const newUser = await User.create({ ...req.body, password: hashedPassword })
+
+    return res
+      .status(200).json({ success: true, message: "Join success", user: newUser })
+  } catch (error) {
+    return res
+      .status(500).json({ success: false, message: error?.message })
+  }
 }
 
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Check if user exists
     const user = await User.findOne({ email });
-    if (!user)
-      return res.status(403).json({ message: "Account does not exist" });
+    if (!user) {
 
+      try {
+        const saltRounds = 10;
+
+        // Hash the password before storing it
+        const hashedPassword = await bcrypt.hash(req.body.password, saltRounds);
+        const newUser = await User.create({ ...req.body, password: hashedPassword })
+
+
+        // Payload to sign
+        const payload = {
+          id: newUser._id,
+          email: newUser.email,
+          role: newUser.role,
+        };
+
+        // Generate access token (15 minutes)
+        const accessToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
+          expiresIn: "15m",
+        });
+
+        // Generate refresh token (7 days)
+        const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
+          expiresIn: "7d",
+        });
+
+        // Dynamic cookie config based on environment
+        const isProduction = process.env.NODE_ENV === "production";
+
+        // Set access token cookie
+        res.cookie("accessToken", accessToken, {
+          httpOnly: true,
+          maxAge: 15 * 60 * 1000, // 15 mins
+          secure: isProduction,
+          sameSite: isProduction ? "none" : "lax",
+        });
+
+        // Set refresh token cookie
+        res.cookie("refreshToken", refreshToken, {
+          httpOnly: true,
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          secure: isProduction,
+          sameSite: isProduction ? "none" : "lax",
+        });
+
+
+
+        return res.status(200).json({
+          success: true,
+          message: "Login successful",
+          user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          },
+        });
+      } catch (error) {
+        console.error("Login Error:", error);
+        return res.status(500).json({ message: "Server error" });
+      }
+    }
+
+
+    // Validate password
     const isPasswordMatched = await bcrypt.compare(password, user.password);
     if (!isPasswordMatched)
       return res.status(400).json({ message: "Invalid credentials" });
 
+    // Payload to sign
     const payload = {
       id: user._id,
       email: user.email,
       role: user.role,
     };
 
-    // Access token
+    // Generate access token (15 minutes)
     const accessToken = jwt.sign(payload, process.env.JWT_SECRET_KEY, {
       expiresIn: "15m",
     });
 
-    res.cookie('accessToken', accessToken,{
-      maxAge: 15 * 60 * 1000,
-      httpOnly: true,  
-      secure: false, // for production true
-      sameSite: 'lax' // for production 'none'
-    })
-
-
+    // Generate refresh token (7 days)
     const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
       expiresIn: "7d",
-      // expiresIn: "7d",
     });
-      res.cookie('refreshToken', refreshToken,{
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days       
-      httpOnly: true,  
-      secure: false, // for production true
-      sameSite: 'lax' // for production 'none'            
-    })
 
+    // Dynamic cookie config based on environment
+    const isProduction = process.env.NODE_ENV === "production";
+
+    // Set access token cookie
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      maxAge: 15 * 60 * 1000, // 15 mins
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+    });
+
+    // Set refresh token cookie
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+    });
+
+    // Send response
     return res.status(200).json({
       success: true,
       message: "Login successful",
-      // token: accessToken, // accessToken only, refreshToken is in cookie
-      user,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (error) {
-    return res.status(500).json({ message: error.message });
+    console.error("Login Error:", error);
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
+
 exports.logout = async (req, res) => {
+  // Dynamic cookie config based on environment
+  const isProduction = process.env.NODE_ENV === "production";
+
   try {
     res.clearCookie('accessToken', {
       httpOnly: true,
-      secure: false, // set true in production
-      sameSite: 'lax', // use 'none' in production with https
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
     });
 
     res.clearCookie('refreshToken', {
       httpOnly: true,
-      secure: false, // set true in production
-      sameSite: 'lax', // use 'none' in production with https
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
     });
 
     return res.status(200).json({
@@ -104,14 +184,18 @@ exports.logout = async (req, res) => {
 exports.refreshToken = async (req, res) => {
   const token = req.cookies.refreshToken;
 
-  
   if (!token) {
     return res.status(401).json({ message: "Refresh token not found" });
   }
 
+  // Dynamic cookie config based on environment
+  const isProduction = process.env.NODE_ENV === "production";
+
   try {
+    // Verify the refresh token
     const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
 
+    // Create a new access token
     const newAccessToken = jwt.sign(
       {
         id: decoded.id,
@@ -119,82 +203,85 @@ exports.refreshToken = async (req, res) => {
         role: decoded.role,
       },
       process.env.JWT_SECRET_KEY,
-      { expiresIn: "1m" }
+      { expiresIn: "15m" }
     );
 
-       res.cookie('accessToken', newAccessToken,{
-      maxAge: 1 * 60 * 1000,
-      httpOnly: true,  
-      secure: false, // for production true
-      sameSite: 'lax' // for production 'none'
-    })
+    // Set the new access token in a secure cookie
+    res.cookie("accessToken", newAccessToken, {
+      httpOnly: true,
+      maxAge: 15 * 60 * 1000, // 15 minutes
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
+    });
 
-    return res.json({ accessToken: newAccessToken });
+    // Optionally return success message (not needed if using cookies only)
+    return res.status(200).json({ success: true });
+
   } catch (err) {
     return res.status(403).json({ message: "Invalid or expired refresh token" });
   }
 };
 
 
-exports.googleLogin = async (req, res) =>{
-    try {      
-        const user =  await User.findOne({email: req.body.email})
-        .populate({
-            path: 'booking',           
-            populate: {
-                path: 'property',
-                model: 'Properties'
-            }
-        });
-        if(user){
-        const accessToken =  jwt.sign(user.email, process.env.JWT_SECRET_KEY);  
-        return res
-        .status(200).json({sucess: true, message: "Log In  success full", user: user, token:accessToken})
-        }else{
-            const newUser = await User.create(req.body);
-            const accessToken =  jwt.sign(user.email, process.env.JWT_SECRET_KEY);     
-            return res
-             .status(200).json({sucess: true, message: "Log In  success full", user: newUser, token:accessToken})           
-        }                      
-    } catch (error) {
-        return res
-        .status(500).json({sucess: false, message: error.message})  
+exports.googleLogin = async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.body.email })
+      .populate({
+        path: 'booking',
+        populate: {
+          path: 'property',
+          model: 'Properties'
+        }
+      });
+    if (user) {
+      const accessToken = jwt.sign(user.email, process.env.JWT_SECRET_KEY);
+      return res
+        .status(200).json({ sucess: true, message: "Log In  success full", user: user, token: accessToken })
+    } else {
+      const newUser = await User.create(req.body);
+      const accessToken = jwt.sign(user.email, process.env.JWT_SECRET_KEY);
+      return res
+        .status(200).json({ sucess: true, message: "Log In  success full", user: newUser, token: accessToken })
     }
+  } catch (error) {
+    return res
+      .status(500).json({ sucess: false, message: error.message })
+  }
 }
 
-exports.getSingleUser = async(req, res)=>{
-    try {
-        const id = req.params.id;
-        const user =  await User.findById(id)
-        .populate({
-            path: 'booking',
-            populate: {
-                path: 'property',
-                model: 'Properties'
-            }
-        })
-        .populate('my_properties');
-        return res
-        .status(200).json({sucess: true, message: "Log In  success full", data: user})   
-    } catch (error) {
-        return res
-        .status(500).json({sucess: false, message: error.message})  
-    }
- 
+exports.getSingleUser = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const user = await User.findById(id)
+      .populate({
+        path: 'booking',
+        populate: {
+          path: 'property',
+          model: 'Properties'
+        }
+      })
+      .populate('my_properties');
+    return res
+      .status(200).json({ sucess: true, message: "Log In  success full", data: user })
+  } catch (error) {
+    return res
+      .status(500).json({ sucess: false, message: error.message })
+  }
+
 
 }
 
-exports.getAllUser = async(req, res)=>{
-    try {
-        const users = await User.find()     
+exports.getAllUser = async (req, res) => {
+  try {
+    const users = await User.find()
 
     return res
-    .status(200).json({sucess: true, message: "Log In  success full", data: users})   
-}
-     catch (error) {
-        return res
-        .status(500).json({sucess: false, message: error.message})  
-    }
+      .status(200).json({ sucess: true, message: "Log In  success full", data: users })
+  }
+  catch (error) {
+    return res
+      .status(500).json({ sucess: false, message: error.message })
+  }
 }
 
 
